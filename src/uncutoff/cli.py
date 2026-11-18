@@ -1378,31 +1378,52 @@ def _is_ignored_rel(rel_path: str, ignore_patterns: list[str]) -> bool:
 
 
 def _collect_git_changed_files(root: Path, staged: bool) -> list[Path]:
-    cmd = ["git", "-C", str(root), "diff", "--name-only", "--diff-filter=ACMR"]
+    top_res = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    git_root = Path(top_res.stdout.strip()) if top_res.returncode == 0 and top_res.stdout.strip() else root
+
+    rel_paths: set[str] = set()
+    cmd = ["git", "-C", str(git_root), "diff", "--name-only", "--diff-filter=ACMR"]
     if staged:
         cmd.append("--cached")
     else:
         cmd.append("HEAD")
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode != 0 and not staged:
-        # Fallback for repos without HEAD commit yet
-        res = subprocess.run(
-            ["git", "-C", str(root), "status", "--porcelain"], capture_output=True, text=True
+        status_res = subprocess.run(
+            ["git", "-C", str(git_root), "status", "--porcelain"], capture_output=True, text=True
         )
-        paths: list[Path] = []
-        for line in res.stdout.splitlines():
+        for line in status_res.stdout.splitlines():
             if len(line) > 3 and not line.startswith("D"):
-                p = root / line[3:].strip()
-                if p.is_file():
-                    paths.append(p)
-        return paths
-    paths = []
-    for line in res.stdout.splitlines():
-        rel = line.strip()
-        if rel:
-            p = root / rel
-            if p.is_file():
-                paths.append(p)
+                rel = line[3:].strip().strip('"')
+                if rel:
+                    rel_paths.add(rel)
+    else:
+        for line in res.stdout.splitlines():
+            rel = line.strip()
+            if rel:
+                rel_paths.add(rel)
+
+    if not staged:
+        untracked = subprocess.run(
+            ["git", "-C", str(git_root), "ls-files", "--others", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+        )
+        if untracked.returncode == 0:
+            for line in untracked.stdout.splitlines():
+                rel = line.strip()
+                if rel:
+                    rel_paths.add(rel)
+
+    paths: list[Path] = []
+    for rel in sorted(rel_paths):
+        p = git_root / rel
+        if p.is_file():
+            paths.append(p)
     return paths
 
 
