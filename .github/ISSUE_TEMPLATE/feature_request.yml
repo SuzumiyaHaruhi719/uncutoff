@@ -1,0 +1,19 @@
+name: Feature / Rule Request
+description: Propose a new version-gated rule pack, framework rule, or agent integration
+title: "[Rule]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: framework
+    attributes:
+      label: Ecosystem & version boundary
+      description: Which package/version introduced the breaking change or deprecation? Link the official changelog or migration guide.
+    validations:
+      required: true
+  - type: textarea
+    id: before_after
+    attributes:
+      label: Pre-cutoff vs modern pattern
+      description: Show the legacy pattern agents tend to emit and the exact modern replacement.
+    validations:
+      required: true

@@ -1,0 +1,26 @@
+name: Bug Report
+description: Report a false positive, false negative, or CLI/hook bug
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the rule ID, manifest versions, and observed vs expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Paste the relevant manifest snippet (`pyproject.toml` or `package.json`) and code sample.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, and uncutoff version (`uncutoff --version`).
+      placeholder: "Linux / Python 3.12 / uncutoff 0.1.0"

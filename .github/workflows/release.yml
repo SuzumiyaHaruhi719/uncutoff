@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Run tests and build distributions
+        run: |
+          pip install build
+          PYTHONPATH=src python -m unittest discover -s tests -v
+          python -m build
+          python - <<'PY'
+          import pathlib, zipfile
+          root = pathlib.Path("skills/uncutoff")
+          with zipfile.ZipFile("dist/uncutoff-skill.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+              for p in sorted(root.rglob("*")):
+                  if p.is_file() and "__pycache__" not in p.parts:
+                      zf.write(p, pathlib.Path("uncutoff") / p.relative_to(root))
+          PY
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes

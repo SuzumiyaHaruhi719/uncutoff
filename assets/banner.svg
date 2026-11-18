@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 260" width="960" height="260" role="img" aria-label="uncutoff banner">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="960" height="260" rx="14" fill="#F8FAFC"/>
+  <rect width="960" height="260" rx="14" fill="url(#grid)"/>
+  <rect x="1" y="1" width="958" height="258" rx="13" fill="none" stroke="#CBD5E1" stroke-width="2"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="960" height="6" rx="3" fill="#2563EB"/>
+
+  <!-- Left geometric cutoff-gate mark -->
+  <g transform="translate(58, 52)">
+    <rect x="0" y="0" width="156" height="156" rx="20" fill="#0F172A"/>
+    <!-- Timeline vertical barrier -->
+    <line x1="78" y1="22" x2="78" y2="134" stroke="#3B82F6" stroke-width="4" stroke-dasharray="6 5"/>
+    <!-- Left legacy amber node blocked -->
+    <rect x="18" y="42" width="46" height="26" rx="6" fill="#D97706" opacity="0.25" stroke="#F59E0B" stroke-width="2"/>
+    <line x1="27" y1="55" x2="55" y2="55" stroke="#FCD34D" stroke-width="3" stroke-linecap="round"/>
+    <!-- Right modern emerald node passed -->
+    <rect x="92" y="88" width="46" height="26" rx="6" fill="#059669" opacity="0.25" stroke="#10B981" stroke-width="2"/>
+    <path d="M 104 101 L 112 109 L 128 93" fill="none" stroke="#34D399" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Corner badge -->
+    <circle cx="78" cy="78" r="11" fill="#2563EB"/>
+    <path d="M 73 78 L 83 78 M 79 73 L 84 78 L 79 83" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Title and subtitle -->
+  <text x="246" y="106" font-family="'DejaVu Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="56" font-weight="800" fill="#0F172A" letter-spacing="-1">uncutoff</text>
+  <text x="248" y="144" font-family="'DejaVu Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="500" fill="#334155">Stop coding agents from writing pre-cutoff legacy APIs.</text>
+
+  <!-- Pill badges -->
+  <g transform="translate(248, 170)" font-family="'DejaVu Sans Mono', 'JetBrains Mono', monospace" font-size="13" font-weight="700">
+    <rect x="0" y="0" width="138" height="30" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="14" y="20" fill="#1D4ED8">MANIFEST-GATED</text>
+
+    <rect x="150" y="0" width="144" height="30" rx="6" fill="#ECFDF5" stroke="#A7F3D0"/>
+    <text x="164" y="20" fill="#047857">ZERO-DEP AST</text>
+
+    <rect x="306" y="0" width="176" height="30" rx="6" fill="#FEF3C7" stroke="#FDE68A"/>
+    <text x="320" y="20" fill="#B45309">AGENT HOOKS + SKILL</text>
+  </g>
+</svg>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>uncutoff — Manifest-Aware Cutoff Guardrails for Coding Agents</title>
+  <meta name="description" content="Stop coding agents from writing pre-cutoff legacy APIs. Manifest-gated AST scanner, Agent Skill, and self-correction hooks for Claude Code, Codex, Gemini CLI, Cursor, and Antigravity.">
+  <style>
+    :root {
+      --surface: #f8fafc;
+      --paper: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --grid: #e2e8f0;
+      --cobalt: #2563eb;
+      --cobalt-dark: #1d4ed8;
+      --cobalt-soft: #eff6ff;
+      --legacy-fg: #b45309;
+      --legacy-bg: #fef3c7;
+      --modern-fg: #047857;
+      --modern-bg: #ecfdf5;
+      --code-bg: #0f172a;
+      --code-fg: #e2e8f0;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background-color: var(--surface);
+      background-image:
+        linear-gradient(to right, rgba(226, 232, 240, 0.55) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.55) 1px, transparent 1px);
+      background-size: 28px 28px;
+      line-height: 1.55;
+    }
+    a { color: var(--cobalt); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    a:focus-visible, button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--cobalt);
+      outline-offset: 2px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 60px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+    .ver {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--cobalt-soft);
+      color: var(--cobalt-dark);
+      border: 1px solid #bfdbfe;
+    }
+    .nav-links { display: flex; gap: 18px; font-size: 0.92rem; font-weight: 600; }
+    .hero { padding: 48px 0 32px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 28px;
+      align-items: start;
+    }
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 4vw, 2.85rem);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+    }
+    .lead {
+      font-size: 1.08rem;
+      color: var(--muted);
+      max-width: 58ch;
+      margin: 0 0 24px;
+    }
+    .install-panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--line);
+      background: #f1f5f9;
+    }
+    .tab-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 10px 14px;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn[aria-selected="true"] {
+      color: var(--cobalt-dark);
+      background: var(--paper);
+      border-bottom-color: var(--cobalt);
+    }
+    .cmd-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      overflow-x: auto;
+    }
+    .cmd-box pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+    .copy-btn {
+      flex-shrink: 0;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #f8fafc;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: #334155; }
+    .install-note {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: var(--paper);
+    }
+    .compare-box {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .compare-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .compare-head div { padding: 9px 14px; }
+    .head-legacy { background: var(--legacy-bg); color: var(--legacy-fg); border-right: 1px solid var(--line); }
+    .head-modern { background: var(--modern-bg); color: var(--modern-fg); }
+    .compare-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .compare-col { padding: 14px; margin: 0; overflow-x: auto; }
+    .compare-col:first-child { border-right: 1px solid var(--line); background: #fffbeb; }
+    .compare-col:last-child { background: #f0fdf4; }
+    .section { padding: 32px 0; }
+    .section h2 { margin: 0 0 8px; font-size: 1.55rem; letter-spacing: -0.02em; }
+    .section-desc { margin: 0 0 18px; color: var(--muted); max-width: 68ch; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .search-input {
+      flex: 1 1 260px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 0.94rem;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .pill[aria-pressed="true"] {
+      background: var(--ink);
+      color: #ffffff;
+      border-color: var(--ink);
+    }
+    .table-wrap {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+    th, td { padding: 11px 14px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+    th { background: #f1f5f9; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    tr:last-child td { border-bottom: 0; }
+    .code-id { font-family: var(--mono); font-weight: 700; color: var(--cobalt-dark); white-space: nowrap; }
+    .gate-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .sev-error { color: #b91c1c; font-family: var(--mono); font-size: 0.78rem; font-weight: 700; }
+    .sev-warning { color: var(--legacy-fg); font-family: var(--mono); font-size: 0.78rem; font-weight: 700; }
+    footer {
+      border-top: 1px solid var(--line);
+      background: var(--paper);
+      padding: 22px 0;
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    @media (max-width: 820px) {
+      .hero-grid, .compare-head, .compare-body { grid-template-columns: 1fr; }
+      .compare-col:first-child, .head-legacy { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="brand">
+        <span>uncutoff</span>
+        <span class="ver">v0.1.0</span>
+      </div>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#rules">Rule Catalog</a>
+        <a href="#hooks">Agent Hooks</a>
+        <a href="https://github.com/SuzumiyaHaruhi719/uncutoff">GitHub</a>
+        <a href="https://github.com/SuzumiyaHaruhi719/uncutoff/releases/latest">Releases</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <h1>Stop coding agents from writing pre-cutoff legacy APIs.</h1>
+          <p class="lead">
+            <code>uncutoff</code> reads your project's <code>pyproject.toml</code>, <code>uv.lock</code>, and
+            <code>package.json</code> first, checks edits in under 30ms with Python's standard library AST parser, and
+            hands coding agents exact modern replacements through native lifecycle hooks.
+          </p>
+          <div class="install-panel">
+            <div class="tabs" role="tablist" aria-label="Install method">
+              <button class="tab-btn" role="tab" aria-selected="true" data-agent="skills">Universal Skill</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-agent="claude">Claude Code</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-agent="codex">Codex CLI</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-agent="gemini">Gemini CLI</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-agent="antigravity">Antigravity</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-agent="pip">pip CLI</button>
+            </div>
+            <div class="cmd-box">
+              <pre id="install-cmd">npx skills add SuzumiyaHaruhi719/uncutoff</pre>
+              <button class="copy-btn" type="button" id="copy-cmd">Copy</button>
+            </div>
+            <div class="install-note" id="install-note">
+              Installs the open SKILL.md bundle and standalone zero-dependency scanner across Claude Code, Codex, Cursor, Gemini CLI, and Antigravity.
+            </div>
+          </div>
+        </div>
+
+        <div class="compare-box" aria-label="Manifest-gated before and after comparison">
+          <div class="compare-head">
+            <div class="head-legacy">Pre-Cutoff Drift (Blocked)</div>
+            <div class="head-modern">Manifest-Aligned Fix</div>
+          </div>
+          <div class="compare-body">
+            <pre class="compare-col">from datetime import datetime
+from pydantic import BaseModel, validator
+import google.generativeai as genai
+
+class Item(BaseModel):
+  at: datetime = datetime.utcnow()
+  @validator("at")
+  def check(cls, v): return v
+
+# CSS in Tailwind v4 project:
+@tailwind base;
+@tailwind utilities;
+
+// Next.js 15 route:
+const theme = cookies().get("theme");</pre>
+            <pre class="compare-col">from datetime import UTC, datetime
+from pydantic import BaseModel, field_validator
+from google import genai
+
+class Item(BaseModel):
+  at: datetime = datetime.now(UTC)
+  @field_validator("at")
+  @classmethod
+  def check(cls, v): return v
+
+/* CSS in Tailwind v4 project */
+@import "tailwindcss";
+
+// Next.js 15 route
+const theme = (await cookies()).get("theme");</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rules">
+      <h2>Version-Gated Rule Catalog (21 Rules)</h2>
+      <p class="section-desc">
+        Framework rules remain dormant until your manifest declares that major version. Older pinned repositories get zero false positives.
+      </p>
+
+      <div class="controls">
+        <input id="rule-search" class="search-input" type="search" placeholder="Filter rules by ID, API name, pack, or replacement (e.g. CUT-040, pydantic, cookies)..." aria-label="Filter rules">
+        <div class="pill-group" id="pack-filters" role="group" aria-label="Filter by rule pack"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rule</th>
+              <th>Pack</th>
+              <th>Version Gate</th>
+              <th>Severity</th>
+              <th>Legacy Pattern</th>
+              <th>Modern Replacement</th>
+            </tr>
+          </thead>
+          <tbody id="rules-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="hooks">
+      <h2>Native Agent Hook Protocols</h2>
+      <p class="section-desc">
+        Run <code>uncutoff hook install --agent &lt;name&gt;</code> to merge non-destructively into existing workspace or global settings.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Config File</th>
+              <th>Lifecycle Event</th>
+              <th>Behavior on Cutoff Finding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Claude Code</strong></td>
+              <td><code>.claude/settings.json</code></td>
+              <td><code>PostToolUse</code> (<code>Write|Edit|MultiEdit</code>)</td>
+              <td>Returns <code>decision: "block"</code> and injects exact fixes via <code>hookSpecificOutput.additionalContext</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>OpenAI Codex CLI</strong></td>
+              <td><code>.codex/hooks.json</code></td>
+              <td><code>PostToolUse</code> / <code>PreToolUse</code></td>
+              <td>Reports replacement guidance on <code>stderr</code> (exits <code>2</code> in <code>PreToolUse</code>) so the agent updates the edit immediately.</td>
+            </tr>
+            <tr>
+              <td><strong>Google Gemini CLI</strong></td>
+              <td><code>.gemini/settings.json</code></td>
+              <td><code>BeforeTool</code> (<code>write_file|replace</code>)</td>
+              <td>Scans proposed edits in memory before disk write and emits strict stdout JSON <code>{"decision": "deny"}</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>Google Antigravity</strong></td>
+              <td><code>.agents/hooks.json</code></td>
+              <td><code>PreToolUse</code> (<code>write_file|edit_file</code>)</td>
+              <td>Inspects <code>toolCall.args</code> in memory and blocks pre-cutoff APIs before writing to disk.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      MIT License · Zero external dependencies · Python 3.10+ · <a href="https://github.com/SuzumiyaHaruhi719/uncutoff">SuzumiyaHaruhi719/uncutoff</a>
+    </div>
+  </footer>
+
+  <script>
+    const INSTALL_OPTIONS = {
+      skills: {
+        cmd: "npx skills add SuzumiyaHaruhi719/uncutoff",
+        note: "Installs the open SKILL.md bundle and standalone zero-dependency scanner across Claude Code, Codex, Cursor, Gemini CLI, and Antigravity."
+      },
+      claude: {
+        cmd: "claude plugin marketplace add SuzumiyaHaruhi719/uncutoff && claude plugin install uncutoff@uncutoff\nuncutoff hook install --agent claude",
+        note: "Registers the Claude Code plugin and writes a PostToolUse hook into .claude/settings.json."
+      },
+      codex: {
+        cmd: "npx skills add SuzumiyaHaruhi719/uncutoff --agent codex\nuncutoff hook install --agent codex",
+        note: "Installs the Codex skill and merges into .codex/hooks.json."
+      },
+      gemini: {
+        cmd: "npx skills add SuzumiyaHaruhi719/uncutoff --agent gemini\nuncutoff hook install --agent gemini",
+        note: "Installs the Gemini CLI skill and adds the BeforeTool JSON guard to .gemini/settings.json."
+      },
+      antigravity: {
+        cmd: "npx skills add SuzumiyaHaruhi719/uncutoff --agent antigravity\nuncutoff hook install --agent antigravity",
+        note: "Installs into .agents/skills/uncutoff and configures .agents/hooks.json."
+      },
+      pip: {
+        cmd: "pip install git+https://github.com/SuzumiyaHaruhi719/uncutoff.git && uncutoff detect . && uncutoff scan .",
+        note: "Installs the standalone CLI and Python package directly from GitHub."
+      }
+    };
+
+    const RULES_DATA = [
+      ["CUT-001", "python-modern", "python >= 3.12", "error", "datetime.utcnow() / utcfromtimestamp()", "datetime.now(datetime.UTC) / fromtimestamp(..., tz=datetime.UTC)"],
+      ["CUT-002", "python-modern", "python >= 3.12", "warning", "asyncio.get_event_loop()", "asyncio.get_running_loop() or asyncio.run()"],
+      ["CUT-003", "python-modern", "python >= 3.10", "warning", "from typing import List, Dict, Optional, Union", "Built-in list[T], dict[K, V], T | None"],
+      ["CUT-004", "python-modern", "python >= 3.12", "error", "import pkg_resources", "importlib.metadata and importlib.resources"],
+      ["CUT-005", "python-modern", "python >= 3.10", "warning", "pyproject.toml license = { text = ... }", 'PEP 639 SPDX string license = "MIT"'],
+      ["CUT-010", "pydantic-v2", "pydantic >= 2", "error", ".dict(), .parse_obj(), .from_orm(), .schema()", ".model_dump(), .model_validate(), .model_json_schema()"],
+      ["CUT-011", "pydantic-v2", "pydantic >= 2", "error", "@validator / @root_validator", "@field_validator + @classmethod / @model_validator"],
+      ["CUT-012", "pydantic-v2", "pydantic >= 2", "warning", "Inner class Config inside BaseModel", "model_config = ConfigDict(...)"],
+      ["CUT-013", "pydantic-v2", "pydantic >= 2", "error", "Field(..., regex=...)", "Field(..., pattern=...)"],
+      ["CUT-020", "fastapi-sqlalchemy", "fastapi present", "warning", "@app.on_event('startup'|'shutdown')", "@asynccontextmanager async def lifespan(app)"],
+      ["CUT-021", "fastapi-sqlalchemy", "sqlalchemy >= 2", "warning", "sqlalchemy.ext.declarative.declarative_base", "from sqlalchemy.orm import DeclarativeBase"],
+      ["CUT-030", "ai-sdks", "always active", "error", "google-generativeai / @google/generative-ai", "google-genai (from google import genai) / @google/genai"],
+      ["CUT-031", "ai-sdks", "openai >= 1", "error", "openai.ChatCompletion.create(...)", "client = OpenAI(); client.responses.create(...)"],
+      ["CUT-032", "ai-sdks", "always active", "warning", "Retired hardcoded model IDs (claude-3-*, gpt-3.5-*, gemini-1.5-*)", "Active release ID or env/config lookup"],
+      ["CUT-040", "tailwind-v4", "tailwindcss >= 4", "error", "@tailwind base / components / utilities", '@import "tailwindcss"; and @theme { ... }'],
+      ["CUT-041", "tailwind-v4", "tailwindcss >= 4", "warning", "tailwind.config.* without CSS @config", "Move tokens into @theme or load via @config"],
+      ["CUT-050", "nextjs-15", "next >= 15", "error", "Synchronous cookies(), headers(), draftMode()", "await cookies(), await headers(), await draftMode()"],
+      ["CUT-060", "react-19", "react >= 19", "error", "useFormState from react-dom", "useActionState from react"],
+      ["CUT-070", "svelte-5", "svelte >= 5", "warning", "export let, $:, createEventDispatcher", "$props(), $derived(), $effect(), callback props"],
+      ["CUT-080", "zod-v4", "zod >= 4", "error", "z.nativeEnum(), invalid_type_error, required_error", "z.enum(MyEnum) and { error: ... }"],
+      ["CUT-090", "eslint-v9", "eslint >= 9", "warning", ".eslintrc* / .eslintignore", "Flat config eslint.config.js / eslint.config.mjs"]
+    ];
+
+    const cmdEl = document.getElementById("install-cmd");
+    const noteEl = document.getElementById("install-note");
+    const copyBtn = document.getElementById("copy-cmd");
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.setAttribute("aria-selected", "false"));
+        btn.setAttribute("aria-selected", "true");
+        const opt = INSTALL_OPTIONS[btn.dataset.agent];
+        cmdEl.textContent = opt.cmd;
+        noteEl.textContent = opt.note;
+        copyBtn.textContent = "Copy";
+      });
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(cmdEl.textContent);
+        copyBtn.textContent = "Copied";
+      } catch (_) {
+        copyBtn.textContent = "Select text";
+      }
+    });
+
+    const packs = ["all", ...new Set(RULES_DATA.map((r) => r[1]))];
+    let selectedPack = "all";
+    const filterHost = document.getElementById("pack-filters");
+    const searchInput = document.getElementById("rule-search");
+    const rulesBody = document.getElementById("rules-body");
+
+    function renderFilters() {
+      filterHost.innerHTML = "";
+      packs.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pill";
+        btn.textContent = p;
+        btn.setAttribute("aria-pressed", String(p === selectedPack));
+        btn.addEventListener("click", () => {
+          selectedPack = p;
+          renderFilters();
+          renderRows();
+        });
+        filterHost.appendChild(btn);
+      });
+    }
+
+    function escapeHtml(s) {
+      return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
+    function renderRows() {
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = RULES_DATA.filter((r) => {
+        if (selectedPack !== "all" && r[1] !== selectedPack) return false;
+        if (!q) return true;
+        return r.some((cell) => cell.toLowerCase().includes(q));
+      });
+      rulesBody.innerHTML = filtered
+        .map(
+          ([id, pack, gate, sev, legacy, modern]) => `
+            <tr>
+              <td class="code-id">${escapeHtml(id)}</td>
+              <td><code>${escapeHtml(pack)}</code></td>
+              <td><span class="gate-tag">${escapeHtml(gate)}</span></td>
+              <td><span class="sev-${sev}">${escapeHtml(sev)}</span></td>
+              <td>${escapeHtml(legacy)}</td>
+              <td>${escapeHtml(modern)}</td>
+            </tr>`
+        )
+        .join("");
+    }
+
+    searchInput.addEventListener("input", renderRows);
+    renderFilters();
+    renderRows();
+  </script>
+</body>
+</html>

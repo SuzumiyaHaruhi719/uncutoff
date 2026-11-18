@@ -1,0 +1,35 @@
+{
+  "name": "uncutoff",
+  "version": "0.1.0",
+  "description": "Stop coding agents from writing pre-cutoff legacy APIs with manifest-gated checks and self-correction hooks.",
+  "homepage": "https://suzumiyaharuhi719.github.io/uncutoff/",
+  "repository": "https://github.com/SuzumiyaHaruhi719/uncutoff",
+  "license": "MIT",
+  "keywords": [
+    "cutoff",
+    "python",
+    "pydantic",
+    "tailwindcss",
+    "nextjs",
+    "svelte",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "uncutoff",
+    "shortDescription": "Manifest-gated anti-legacy API guard",
+    "longDescription": "Version-gated AST and config scanner paired with an Agent Skill and lifecycle hooks that catch deprecated or removed pre-cutoff APIs across Python, Pydantic v2, FastAPI, AI SDKs, Tailwind v4, Next.js 15, React 19, and Svelte 5.",
+    "category": "Developer Tools",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "capabilities": [
+      "Read"
+    ],
+    "websiteURL": "https://suzumiyaharuhi719.github.io/uncutoff/",
+    "supportURL": "https://github.com/SuzumiyaHaruhi719/uncutoff/issues",
+    "defaultPrompt": [
+      "Run uncutoff detect and uncutoff scan on this repository to audit for pre-cutoff APIs",
+      "Check recent changes for Tailwind v4, Next.js 15, Pydantic v2, or retired AI SDK usage"
+    ]
+  }
+}

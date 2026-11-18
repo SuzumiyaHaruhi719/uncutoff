@@ -1,0 +1,6 @@
+{
+  "name": "uncutoff",
+  "version": "0.1.0",
+  "description": "Manifest-aware anti-legacy API skill, AST scanner, and lifecycle hooks for coding agents.",
+  "license": "MIT"
+}

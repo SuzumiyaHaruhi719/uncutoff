@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uncutoff"
+version = "0.1.0"
+description = "Stop coding agents from writing pre-cutoff legacy APIs: manifest-aware Agent Skill, zero-dependency scanner, and instant self-correction hooks"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+  { name = "uncutoff contributors" },
+]
+keywords = [
+  "agent-skills",
+  "claude-code",
+  "codex",
+  "gemini-cli",
+  "cursor",
+  "linter",
+  "static-analysis",
+  "pydantic",
+  "tailwindcss",
+  "nextjs",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://suzumiyaharuhi719.github.io/uncutoff/"
+Repository = "https://github.com/SuzumiyaHaruhi719/uncutoff"
+Issues = "https://github.com/SuzumiyaHaruhi719/uncutoff/issues"
+
+[project.scripts]
+uncutoff = "uncutoff.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

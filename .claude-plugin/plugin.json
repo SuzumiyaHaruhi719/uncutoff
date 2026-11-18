@@ -1,0 +1,8 @@
+{
+  "name": "uncutoff",
+  "version": "0.1.0",
+  "description": "Stop coding agents from writing pre-cutoff legacy APIs: manifest-aware Agent Skill, zero-dep scanner, and instant self-correction hooks.",
+  "homepage": "https://suzumiyaharuhi719.github.io/uncutoff/",
+  "repository": "https://github.com/SuzumiyaHaruhi719/uncutoff",
+  "license": "MIT"
+}

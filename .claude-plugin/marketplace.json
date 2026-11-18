@@ -1,0 +1,15 @@
+{
+  "name": "uncutoff",
+  "description": "Manifest-aware cutoff guardrails, scanner, and self-correction hooks for coding agents.",
+  "owner": {
+    "name": "uncutoff contributors"
+  },
+  "plugins": [
+    {
+      "name": "uncutoff",
+      "source": "./",
+      "description": "Stop coding agents from writing pre-cutoff legacy APIs across Python, Pydantic v2, FastAPI, AI SDKs, Tailwind v4, Next.js 15, React 19, Svelte 5, and Zod v4.",
+      "version": "0.1.0"
+    }
+  ]
+}

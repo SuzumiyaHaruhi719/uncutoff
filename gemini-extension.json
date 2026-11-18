@@ -1,0 +1,5 @@
+{
+  "name": "uncutoff",
+  "version": "0.1.0",
+  "description": "Stop coding agents from writing pre-cutoff legacy APIs with manifest-gated checks and BeforeTool hooks."
+}
